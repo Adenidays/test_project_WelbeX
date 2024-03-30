@@ -1,7 +1,6 @@
 # routes.py
 from fastapi import APIRouter, File, UploadFile, HTTPException
 from models import Route, Point
-from utils import calculate_optimal_route
 from database import SessionLocal
 
 router = APIRouter()
