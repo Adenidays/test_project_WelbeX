@@ -1,17 +1,10 @@
-# models.py
-from sqlalchemy import Column, Integer, Float
-from sqlalchemy.orm import relationship
-from database import Base
+from pydantic import BaseModel
+from typing import List
 
-class Point(Base):
-    __tablename__ = "points"
+class Point(BaseModel):
+    lat: float
+    lng: float
 
-    id = Column(Integer, primary_key=True, index=True)
-    lat = Column(Float)
-    lng = Column(Float)
-
-class Route(Base):
-    __tablename__ = "routes"
-
-    id = Column(Integer, primary_key=True, index=True)
-    points = relationship("Point", back_populates="route")
+class Route(BaseModel):
+    id: int
+    points: List[Point]

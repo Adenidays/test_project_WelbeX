@@ -1,4 +1,3 @@
-# utils.py
 from itertools import permutations
 
 def calculate_optimal_route(points):
