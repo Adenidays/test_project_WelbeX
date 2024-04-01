@@ -1,5 +1,6 @@
 from itertools import permutations
 
+
 def calculate_optimal_route(points):
     all_permutations = permutations(points[1:])
     optimal_route = []

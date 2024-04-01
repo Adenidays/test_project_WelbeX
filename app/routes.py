@@ -1,26 +1,22 @@
-from fastapi import APIRouter, File, UploadFile, HTTPException
-from models import Point, Route
-from utils import calculate_optimal_route
+from fastapi import File, UploadFile, HTTPException, Depends, APIRouter
+from sqlalchemy.orm import  Session
 import csv
-import os
+
+from models import Route, Point, RouteDB
+from utils import calculate_optimal_route
+from сrud import save_route_to_db, get_db
 
 router = APIRouter()
 
-MAX_FILE_SIZE_BYTES = 6291456  # 6 MB
-MAX_ROWS_TO_READ = 3
 
-routes = {}
-
-@router.post("/routes", response_model=Route)
-async def create_route(format: str = None, file: UploadFile = File(...)):
+@router.post("/api/routes", response_model=Route)
+async def create_route(format: str = None, file: UploadFile = File(...), db: Session = Depends(get_db)):
     if format != 'csv':
         raise HTTPException(status_code=400, detail="Only CSV format is supported")
 
     if file.content_type != "text/csv":
         raise HTTPException(status_code=400, detail="Only CSV files are allowed")
 
-    if os.fstat(file.file.fileno()).st_size > MAX_FILE_SIZE_BYTES:
-        raise HTTPException(status_code=400, detail="File size should not exceed 6 MB")
 
     try:
         contents = await file.read()
@@ -29,8 +25,7 @@ async def create_route(format: str = None, file: UploadFile = File(...)):
         points = []
         field_count = 0
         for line in csv.reader(contents):
-            if field_count >= MAX_ROWS_TO_READ:
-                break
+
             if field_count == 0:
                 field_count += 1
                 continue
@@ -40,18 +35,22 @@ async def create_route(format: str = None, file: UploadFile = File(...)):
 
         optimal_route = calculate_optimal_route(points)
 
-        route_id = len(routes) + 1
-        routes[route_id] = optimal_route
+        save_route_to_db(db, optimal_route)
 
+        route_id = 1
         return {"id": route_id, "points": optimal_route}
 
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.get("/routes/{route_id}", response_model=Route)
-async def get_route(route_id: int):
-    if route_id not in routes:
+@router.get("/api/routes/{route_id}", response_model=Route)
+async def get_route(route_id: int, db: Session = Depends(get_db)):
+    route_db = db.query(RouteDB).filter(RouteDB.id == route_id).first()
+    if not route_db:
         raise HTTPException(status_code=404, detail="Route not found")
 
-    return {"id": route_id, "points": routes[route_id]}
+    points_db = route_db.route_points
+    points = [Point(lat=point_db.lat, lng=point_db.lng) for point_db in points_db]
+
+    return {"id": route_id, "points": points}
