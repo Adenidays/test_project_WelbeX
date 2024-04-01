@@ -1,1 +1,1 @@
-docker build -t fastapi-app .
+docker-compose up --build
