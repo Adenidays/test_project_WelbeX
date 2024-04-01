@@ -1,2 +1,2 @@
 docker build -t fastapi-app .
-прописываем лоя 
+--прописываем лоя 
